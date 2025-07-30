@@ -160,9 +160,12 @@ def setup_qemu(request, qemu_wrapper, build_dir, conn):
 
             # collect logs before shutting down
             try:
-                # TODO: this should be a configurable list of logs to collect
-                log_path = "/tmp/journalctl.log"
-                conn.run(f"journalctl --no-pager > {log_path}")
+                remote_user_cmd = conn.run("whoami")
+                remote_user = remote_user_cmd.stdout.strip() if remote_user_cmd.stdout else "unknown"
+
+                conn.run(
+                    f"journalctl --sync && journalctl --no-pager --all --boot=0 > /tmp/journalctl-{conn.user}-{remote_user}.log"
+                )
                 get_no_sftp(log_path, conn, local=log_path)
                 print("QEMU machine logs collected successfully before shutdown.")
             except Exception as e:
